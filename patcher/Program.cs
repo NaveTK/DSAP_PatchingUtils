@@ -49,7 +49,7 @@ var existingSha256 = CalculateSha256("menu/menu_0.tpf.dcx");
 if (existingSha256 == VanillaSha256)
 {
   Console.WriteLine("AP Logo has not been patched into the game yet.");
-  if (!File.Exists("menu/menu_0.tpf.dcx"))
+  if (!File.Exists("ap_logo.patch"))
     return Error("Could not locate patch file. Make sure the patch file is present in the same directory as this script.");
 
   var resp = Question("Do you want to patch the AP logo into the game? (Y/n): ");
