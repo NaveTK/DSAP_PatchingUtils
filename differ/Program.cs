@@ -28,9 +28,9 @@ byte[] modedBytes = File.ReadAllBytes("menu_0_ap.tpf.dcx");
 Console.WriteLine($"menu_0_ap.tpf.dcx -> Sha256: {CalculateSha256("menu_0_ap.tpf.dcx")}");
 
 Console.WriteLine("Creating patch...");
-using var patchStream = File.Create("ap_logo.patch");
-BinaryPatch.Create(ogBytes, modedBytes, patchStream);
-patchStream.Close();
+using (var patchStream = File.Create("ap_logo.patch")) {
+  BinaryPatch.Create(ogBytes, modedBytes, patchStream);
+}
 
 Console.WriteLine($"ap_logo.patch -> Sha256: {CalculateSha256("ap_logo.patch")}");
 
