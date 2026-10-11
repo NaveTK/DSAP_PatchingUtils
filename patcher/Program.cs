@@ -46,8 +46,8 @@ static int Exit(int errorCode)
 }
 
 const string VanillaSha256 = "d4513776f3927420a675d9145d1c645ff409e6f8fc9c9b11c06b78cb1f2623ab";
-const string PatchedSha256 = "42e61fed65ae5be59e4f07f84c92e987182cacde2fc570c2bb7d861699531396";
-const string PatchSha256   = "dc31d380acd8938875857df5a0d76dbfa0834695347336dfc36961dd74c06b3c";
+const string PatchedSha256 = "db80026726cc901dc5344560638fec3de021f9f523e8f77f749cc8939fd47b16";
+const string PatchSha256   = "ac5445e7f4d38e2d62c031288b1162d95e1040bcc8f0587da54c1e0a000af3eb";
 
 const string vanilla = "menu/menu_0.tpf.dcx";
 const string backup = "menu/menu_0.tpf.dcx.apbak";
