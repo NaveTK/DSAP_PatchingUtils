@@ -11,28 +11,37 @@ static string CalculateSha256(string filePath)
     return Convert.ToHexString(hash).ToLowerInvariant();
 }
 
-static int Error(string err)
+static int Error(string msg)
 {
   Console.ForegroundColor = ConsoleColor.Red;
-  Console.WriteLine(err);
+  Console.WriteLine(msg);
   Console.ResetColor();
   return Exit(1);
 }
 
-static int Question(string question)
+static void Success(string msg)
+{
+  Console.ForegroundColor = ConsoleColor.Green;
+  Console.WriteLine(msg);
+  Console.ResetColor();
+}
+
+static ConsoleKeyInfo Question(string msg)
 {
   Console.ForegroundColor = ConsoleColor.Yellow;
-  Console.Write(question);
+  Console.Write(msg);
   Console.ResetColor();
-  return Console.Read();
+  var resp = Console.ReadKey();
+  Console.WriteLine();
+  return resp;
 }
 
 static int Exit(int errorCode)
 {
-  Console.ForegroundColor = ConsoleColor.Gray;
-  Console.WriteLine("Press any key to exit.");
+  Console.ForegroundColor = ConsoleColor.DarkGray;
+  Console.Write("Press any key to exit.");
   Console.ResetColor();
-  Console.Read();
+  Console.ReadKey();
   return errorCode;
 }
 
@@ -40,20 +49,25 @@ const string VanillaSha256 = "d4513776f3927420a675d9145d1c645ff409e6f8fc9c9b11c0
 const string PatchedSha256 = "42e61fed65ae5be59e4f07f84c92e987182cacde2fc570c2bb7d861699531396";
 const string PatchSha256   = "dc31d380acd8938875857df5a0d76dbfa0834695347336dfc36961dd74c06b3c";
 
-if (!File.Exists("menu/menu_0.tpf.dcx"))
+const string vanilla = "menu/menu_0.tpf.dcx";
+const string backup = "menu/menu_0.tpf.dcx.apbak";
+const string tmpPatch = "menu/menu_0.tpf.dcx.tmp";
+const string patch = "ap_logo.patch";
+
+if (!File.Exists(vanilla))
   return Error("Could not locate assets. Make sure this script is run from the base Dark Souls Remastered installation directory.");
 
 Console.WriteLine("Checking present assets...");
-var existingSha256 = CalculateSha256("menu/menu_0.tpf.dcx");
+var existingSha256 = CalculateSha256(vanilla);
 
 if (existingSha256 == VanillaSha256)
 {
   Console.WriteLine("AP Logo has not been patched into the game yet.");
-  if (!File.Exists("ap_logo.patch"))
+  if (!File.Exists(patch))
     return Error("Could not locate patch file. Make sure the patch file is present in the same directory as this script.");
 
   var resp = Question("Do you want to patch the AP logo into the game? (Y/n): ");
-  if (resp == 'N' || resp == 'n')
+  if (resp.KeyChar == 'N' || resp.KeyChar == 'n')
   {
     Console.WriteLine("Canceled patching process.");
     return Exit(0);
@@ -61,38 +75,49 @@ if (existingSha256 == VanillaSha256)
   else
   {
     Console.WriteLine("Checking patch file...");
-    var existingPatchSha256 = CalculateSha256("ap_logo.patch");
+    var existingPatchSha256 = CalculateSha256(patch);
     if (existingPatchSha256 != PatchSha256)
       return Error("Invalid patch file. Please ensure you downloaded the patch file from the official repo.");
     
-    if (!File.Exists("menu/menu_0.tpf.dcx.apbak"))
+    if (!File.Exists(backup))
     {
       Console.WriteLine("Creating backup...");
-      File.Copy("menu/menu_0.tpf.dcx", "menu/menu_0.tpf.dcx.apbak");
+      File.Copy(vanilla, backup);
     }
     else
     {
-      Console.WriteLine("Backup already exists.");
+      Console.WriteLine("Backup already exists. Verifying...");
+
+      var backupSha256 = CalculateSha256(backup);
+
+      if (backupSha256 != VanillaSha256)
+      {
+        Console.WriteLine("Invalid Backup. Recreating...");
+        File.Copy(vanilla, backup, true);
+      }
     }
 
     Console.WriteLine("Applying patch...");
-    using (var original = File.OpenRead("menu/menu_0.tpf.dcx")){
-      using var patched = File.Create("menu/menu_0.tpf.dcx.tmp");
+    using (var original = File.OpenRead(vanilla)){
+      using var patched = File.Create(tmpPatch);
       BinaryPatch.Apply(
           original,
-          () => File.OpenRead("ap_logo.patch"),
+          () => File.OpenRead(patch),
           patched
       );
     }
     Console.WriteLine("Verifying patch...");
-    var tempSha256 = CalculateSha256("menu/menu_0.tpf.dcx.tmp");
-    if (tempSha256 != PatchedSha256)
+    var tmpSha256 = CalculateSha256(tmpPatch);
+    if (tmpSha256 != PatchedSha256)
+    {
+      File.Delete(tmpPatch);
       return Error("Aborting. Patching process failed. Game files have not been modified.");
+    }
 
-    File.Copy("menu/menu_0.tpf.dcx.tmp", "menu/menu_0.tpf.dcx", true);
-    File.Delete("menu/menu_0.tpf.dcx.tmp");
+    File.Copy(tmpPatch, vanilla, true);
+    File.Delete(tmpPatch);
 
-    Console.WriteLine("Done. AP logo has been patched into the game.");
+    Success("Done. AP logo has been patched into the game.");
     return Exit(0);
   }
 }
@@ -100,19 +125,27 @@ else if (existingSha256 == PatchedSha256)
 {
   Console.WriteLine("AP Logo has already been patched into the game.");
   var resp = Question("Do you want to revert the patch? (y/N): ");
-  if (resp == 'Y' || resp == 'y')
+  if (resp.KeyChar == 'Y' || resp.KeyChar == 'y')
   {
-    if (!File.Exists("menu/menu_0.tpf.dcx.apbak"))
+    if (!File.Exists(backup))
       return Error("Backup not found. Please use the \"Verify integrity of game files\" function on Steam to restore the original assets.");
 
+    Console.WriteLine("Verifying backup...");
+    var backupSha256 = CalculateSha256(backup);
+
+    if (backupSha256 != VanillaSha256)
+      return Error("Backup does not match vanilla asset. Please use the \"Verify integrity of game files\" function on Steam instead.");
+
     Console.WriteLine("Restoring backup...");
-    File.Copy("menu/menu_0.tpf.dcx.apbak", "menu/menu_0.tpf.dcx", true);
-    Console.WriteLine("Done.");
+    File.Copy(backup, vanilla, true);
+    File.Delete(backup);
+
+    Success("Done. The AP logo has been removed.");
     return Exit(0);
   }
   else
   {
-    Console.WriteLine("Nothing to do.");
+    Success("Nothing to do.");
     return Exit(0);
   }
 }

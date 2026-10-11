@@ -11,28 +11,38 @@ static string CalculateSha256(string filePath)
     return Convert.ToHexString(hash).ToLowerInvariant();
 }
 
-if (!File.Exists("menu_0.tpf.dcx"))
+if (args.Length != 3)
 {
-  Console.WriteLine("File \"menu_0.tpf.dcx\" does not exist.");
-  return 1;
+  Console.Write("Please use \"differ <vanilla_file> <modified_file> <output_patch>\"");
+  return 0;
 }
-byte[] ogBytes = File.ReadAllBytes("menu_0.tpf.dcx");
-Console.WriteLine($"menu_0.tpf.dcx -> Sha256: {CalculateSha256("menu_0.tpf.dcx")}");
 
-if (!File.Exists("menu_0_ap.tpf.dcx"))
+var vanilla = args[0];
+var modified = args[1];
+var patch = args[2];
+
+if (!File.Exists(vanilla))
 {
-  Console.WriteLine("File \"menu_0_ap.tpf.dcx\" does not exist.");
+  Console.WriteLine($"File \"{vanilla}\" does not exist.");
   return 1;
 }
-byte[] modedBytes = File.ReadAllBytes("menu_0_ap.tpf.dcx");
-Console.WriteLine($"menu_0_ap.tpf.dcx -> Sha256: {CalculateSha256("menu_0_ap.tpf.dcx")}");
+byte[] ogBytes = File.ReadAllBytes(vanilla);
+Console.WriteLine($"{vanilla} -> Sha256: {CalculateSha256(vanilla)}");
+
+if (!File.Exists(modified))
+{
+  Console.WriteLine($"File \"{modified}\" does not exist.");
+  return 1;
+}
+byte[] modedBytes = File.ReadAllBytes(modified);
+Console.WriteLine($"{modified} -> Sha256: {CalculateSha256(modified)}");
 
 Console.WriteLine("Creating patch...");
-using (var patchStream = File.Create("ap_logo.patch")) {
+using (var patchStream = File.Create(patch)) {
   BinaryPatch.Create(ogBytes, modedBytes, patchStream);
 }
 
-Console.WriteLine($"ap_logo.patch -> Sha256: {CalculateSha256("ap_logo.patch")}");
+Console.WriteLine($"{patch} -> Sha256: {CalculateSha256(patch)}");
 
 Console.WriteLine("Done.");
 return 0;
